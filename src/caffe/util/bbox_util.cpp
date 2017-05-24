@@ -2137,7 +2137,7 @@ template <typename Dtype>
 void VisualizeBBox(const vector<cv::Mat>& images, const Blob<Dtype>* detections,
                    const float threshold, const vector<cv::Scalar>& colors,
                    const map<int, string>& label_to_display_name,
-                   const string& save_file) {
+                   const string& save_file, bool visualize) {
   // Retrieve detections.
   CHECK_EQ(detections->width(), 7);
   const int num_det = detections->height();
@@ -2171,8 +2171,8 @@ void VisualizeBBox(const vector<cv::Mat>& images, const Blob<Dtype>* detections,
   }
 
   int fontface = cv::FONT_HERSHEY_SIMPLEX;
-  double scale = 1;
-  int thickness = 2;
+  double scale = 0.4;
+  int thickness = 1;
   int baseline = 0;
   char buffer[50];
   for (int i = 0; i < num_img; ++i) {
@@ -2200,7 +2200,7 @@ void VisualizeBBox(const vector<cv::Mat>& images, const Blob<Dtype>* detections,
       for (int j = 0; j < bboxes.size(); ++j) {
         cv::Point top_left_pt(bboxes[j].xmin(), bboxes[j].ymin());
         cv::Point bottom_right_pt(bboxes[j].xmax(), bboxes[j].ymax());
-        cv::rectangle(image, top_left_pt, bottom_right_pt, color, 4);
+        cv::rectangle(image, top_left_pt, bottom_right_pt, color, 2);
         cv::Point bottom_left_pt(bboxes[j].xmin(), bboxes[j].ymax());
         snprintf(buffer, sizeof(buffer), "%s: %.2f", label_name.c_str(),
                  bboxes[j].score());
@@ -2224,9 +2224,12 @@ void VisualizeBBox(const vector<cv::Mat>& images, const Blob<Dtype>* detections,
       }
       cap_out.write(image);
     }
-    cv::imshow("detections", image);
-    if (cv::waitKey(1) == 27) {
-      raise(SIGINT);
+    // Show result if required.
+    if (visualize){
+        cv::imshow("detections", image);
+        if (cv::waitKey(1) == 27) {
+          raise(SIGINT);
+        }
     }
   }
   start_clock = clock();
@@ -2237,13 +2240,13 @@ void VisualizeBBox(const vector<cv::Mat>& images,
                    const Blob<float>* detections,
                    const float threshold, const vector<cv::Scalar>& colors,
                    const map<int, string>& label_to_display_name,
-                   const string& save_file);
+                   const string& save_file, bool visualize);
 template
 void VisualizeBBox(const vector<cv::Mat>& images,
                    const Blob<double>* detections,
                    const float threshold, const vector<cv::Scalar>& colors,
                    const map<int, string>& label_to_display_name,
-                   const string& save_file);
+                   const string& save_file, bool visualize);
 
 #endif  // USE_OPENCV
 
