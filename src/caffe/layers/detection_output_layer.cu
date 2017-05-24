@@ -8,6 +8,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <math.h>
 
 #include "boost/filesystem.hpp"
 #include "boost/foreach.hpp"
@@ -15,6 +16,8 @@
 #include "caffe/layers/detection_output_layer.hpp"
 
 namespace caffe {
+
+static int globalImageIndex = 1;
 
 template <typename Dtype>
 void DetectionOutputLayer<Dtype>::Forward_gpu(
@@ -288,13 +291,61 @@ void DetectionOutputLayer<Dtype>::Forward_gpu(
       }
     }
   }
-  if (visualize_) {
+  if (!output_directory_.empty()) {
+      boost::filesystem::path output_directory(output_directory_);
+      boost::filesystem::path file(output_name_prefix_ + ".txt");
+      boost::filesystem::path out_file = output_directory / file;
+      std::ofstream outfile;
+      outfile.open(out_file.string().c_str(), std::ios_base::app);
+
+      int num_det = (top[0])->height();
+      int num_img = num;
+      const Dtype* detections_data = top[0]->cpu_data();
+      const int width = width_;
+      const int height = height_;
+      vector<LabelBBox> all_detections(num_img);
+      for (int k = 0; k < num_det; ++k) {
+         const int img_idx = detections_data[k * 7];
+         CHECK_LT(img_idx, num_img);
+         const int label = detections_data[k * 7 + 1];
+         const float score = detections_data[k * 7 + 2];
+         if (score < confidence_threshold_) {
+           continue;
+         }
+         NormalizedBBox bbox;
+         bbox.set_xmin(fmax(0, detections_data[k * 7 + 3] * width));
+         bbox.set_ymin(fmax(0, detections_data[k * 7 + 4] * height));
+         bbox.set_xmax(detections_data[k * 7 + 5] * width);
+         bbox.set_ymax(detections_data[k * 7 + 6] * height);
+         bbox.set_score(score);
+         all_detections[img_idx][label].push_back(bbox);
+      }
+      for (int k = 0; k < num_img; ++k){
+	for (map<int, vector<NormalizedBBox> >::iterator it = all_detections[k].begin(); it != all_detections[k].end(); ++it) {
+            int label = it->first;
+            string label_name = "Unknown";
+            if (label_to_display_name_.find(label) != label_to_display_name_.end()) {
+                    label_name = label_to_display_name_.find(label)->second;
+            }
+            const vector<NormalizedBBox>& bboxes = it->second;
+            for (int j = 0; j < bboxes.size(); ++j) {
+                outfile << globalImageIndex << ".jpg " << label_name;
+                outfile << " " << round(bboxes[j].xmin()) << " " << round(bboxes[j].ymin());
+                outfile << " " << round(bboxes[j].xmax()) << " " << round(bboxes[j].ymax());
+                outfile << " " << bboxes[j].score() << std::endl;
+            }
+        }
+        globalImageIndex = globalImageIndex + 1;
+      }
+      outfile.close();
+  }
+  if (visualize_ || !save_file_.empty()) {
 #ifdef USE_OPENCV
     vector<cv::Mat> cv_imgs;
     this->data_transformer_->TransformInv(bottom[3], &cv_imgs);
     vector<cv::Scalar> colors = GetColors(label_to_display_name_.size());
     VisualizeBBox(cv_imgs, top[0], visualize_threshold_, colors,
-        label_to_display_name_, save_file_);
+        label_to_display_name_, save_file_, visualize_);
 #endif  // USE_OPENCV
   }
 }

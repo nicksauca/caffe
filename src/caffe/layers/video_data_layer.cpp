@@ -53,6 +53,7 @@ void VideoDataLayer<Dtype>::DataLayerSetUp(
       LOG(FATAL) << "Failed to open video: " << video_file;
     }
     total_frames_ = cap_.get(CV_CAP_PROP_FRAME_COUNT);
+    LOG(INFO) << "total frames: " << total_frames_; 
     processed_frames_ = 0;
     // Read image to infer shape.
     cap_ >> cv_img;
@@ -110,16 +111,19 @@ void VideoDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
   }
 
   int skip_frames = skip_frames_;
+  int prefetchedSize = (this->PREFETCH_COUNT+1) * batch_size;
   for (int item_id = 0; item_id < batch_size; ++item_id) {
     timer.Start();
     cv::Mat cv_img;
     if (video_type_ == VideoDataParameter_VideoType_WEBCAM) {
       cap_ >> cv_img;
     } else if (video_type_ == VideoDataParameter_VideoType_VIDEO) {
-      if (processed_frames_ >= total_frames_) {
-        LOG(INFO) << "Finished processing video.";
+      if (processed_frames_ >= total_frames_ && processed_frames_ < total_frames_ + prefetchedSize) {
+		cap_.set(CV_CAP_PROP_POS_FRAMES, 0);
+      } else if (processed_frames_ >= total_frames_ + prefetchedSize) {
+		LOG(INFO) << "Finished processing video.";
         raise(SIGINT);
-      }
+	  }
       ++processed_frames_;
       cap_ >> cv_img;
     } else {
@@ -139,17 +143,17 @@ void VideoDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
       this->data_transformer_->Transform(cv_img, &(this->transformed_data_));
       trans_time += timer.MicroSeconds();
     }
-    CHECK(cv_img.data) << "Could not load image!";
-    read_time += timer.MicroSeconds();
-    timer.Start();
+//    CHECK(cv_img.data) << "Could not load image!";
+//    read_time += timer.MicroSeconds();
+//    timer.Start();
     // Apply transformations (mirror, crop...) to the image
-    int offset = batch->data_.offset(item_id);
-    this->transformed_data_.set_cpu_data(top_data + offset);
-    this->data_transformer_->Transform(cv_img, &(this->transformed_data_));
-    trans_time += timer.MicroSeconds();
-    if (this->output_labels_) {
-      top_label[item_id] = 0;
-    }
+//    int offset = batch->data_.offset(item_id);
+//    this->transformed_data_.set_cpu_data(top_data + offset);
+//    this->data_transformer_->Transform(cv_img, &(this->transformed_data_));
+//    trans_time += timer.MicroSeconds();
+      if (this->output_labels_) {
+        top_label[item_id] = 0;
+      }
   }
   timer.Stop();
   batch_timer.Stop();

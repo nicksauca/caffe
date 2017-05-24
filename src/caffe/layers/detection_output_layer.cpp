@@ -15,6 +15,7 @@ namespace caffe {
 template <typename Dtype>
 void DetectionOutputLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top) {
+  LOG(INFO)<< "LayerSetUp called";
   const DetectionOutputParameter& detection_output_param =
       this->layer_param_.detection_output_param();
   CHECK(detection_output_param.has_num_classes()) << "Must specify num_classes";
@@ -28,6 +29,8 @@ void DetectionOutputLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
   keep_top_k_ = detection_output_param.keep_top_k();
   confidence_threshold_ = detection_output_param.has_confidence_threshold() ?
       detection_output_param.confidence_threshold() : -FLT_MAX;
+  width_ = detection_output_param.has_width() ? detection_output_param.width(): 300;
+  height_ = detection_output_param.has_height() ? detection_output_param.height(): 300;
   // Parameters used in nms.
   nms_threshold_ = detection_output_param.nms_param().nms_threshold();
   CHECK_GE(nms_threshold_, 0.) << "nms_threshold must be non negative.";
@@ -106,7 +109,7 @@ void DetectionOutputLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
   }
   name_count_ = 0;
   visualize_ = detection_output_param.visualize();
-  if (visualize_) {
+  if (visualize_ || !detection_output_param.save_file().empty()) {
     visualize_threshold_ = 0.6;
     if (detection_output_param.has_visualize_threshold()) {
       visualize_threshold_ = detection_output_param.visualize_threshold();
@@ -456,13 +459,13 @@ void DetectionOutputLayer<Dtype>::Forward_cpu(
       }
     }
   }
-  if (visualize_) {
+  if (visualize_ || !save_file_.empty()) {
 #ifdef USE_OPENCV
     vector<cv::Mat> cv_imgs;
     this->data_transformer_->TransformInv(bottom[3], &cv_imgs);
     vector<cv::Scalar> colors = GetColors(label_to_display_name_.size());
     VisualizeBBox(cv_imgs, top[0], visualize_threshold_, colors,
-        label_to_display_name_, save_file_);
+        label_to_display_name_, save_file_, visualize_);
 #endif  // USE_OPENCV
   }
 }

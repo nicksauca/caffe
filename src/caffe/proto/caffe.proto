@@ -1,5 +1,6 @@
 syntax = "proto2";
 
+ 
 package caffe;
 
 // Specifies the shape (dimensions) of a Blob.
@@ -1034,6 +1035,9 @@ message DetectionOutputParameter {
   optional float visualize_threshold = 11;
   // If provided, save outputs to video file.
   optional string save_file = 12;
+  // Stores width of orignal video
+  optional int32 width = 13;
+  optional int32 height = 14;
 }
 
 message DropoutParameter {

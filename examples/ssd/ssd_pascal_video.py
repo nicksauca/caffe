@@ -73,7 +73,11 @@ caffe_root = os.getcwd()
 # Set true if you want to start training right after generating all files.
 run_soon = True
 # The video file path
-video_file = "examples/videos/ILSVRC2015_train_00755001.mp4"
+#video_file = "examples/videos/newTunnel.mp4"
+video_file = sys.argv[1]
+
+# The outputvideo file path
+saveFile = sys.argv[2]
 
 # The parameters for the video demo
 
@@ -81,14 +85,14 @@ video_file = "examples/videos/ILSVRC2015_train_00755001.mp4"
 # If true, use batch norm for all newly added layers.
 # Currently only the non batch norm version has been tested.
 use_batchnorm = False
-num_classes = 21
+num_classes = 4
 share_location = True
 background_label_id=0
 conf_loss_type = P.MultiBoxLoss.SOFTMAX
 code_type = P.PriorBox.CENTER_SIZE
 lr_mult = 1.
 # Stores LabelMapItem.
-label_map_file = "data/VOC0712/labelmap_voc.prototxt"
+label_map_file = "data/coco/labelmap_miist.prototxt"
 # The resized image size
 resize_width = 300
 resize_height = 300
@@ -101,14 +105,28 @@ solver_mode = P.Solver.GPU
 # Defining which GPUs to use.
 gpus = "0"
 # Number of frames to be processed per batch.
-test_batch_size = 1
+test_batch_size = 32
 # Only display high quality detections whose scores are higher than a threshold.
-visualize_threshold = 0.3
+visualize_threshold = 0.6
 # Size of video image.
-video_width = 1280
-video_height = 720
+import cv2
+vcap = cv2.VideoCapture(video_file)
+if vcap.isOpened(): 
+    # get vcap property 
+    video_width = int(vcap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    video_height = int(vcap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    vcap.release()
+else: 
+    video_width = 300
+    video_height = 256
+
+#video_width = 1280
+#video_height = 720
+#video_width = 320
+#video_height = 256
+
 # Scale the image size for display.
-scale = 0.8
+scale = 1
 
 ### Hopefully you don't need to change the following ###
 resize = "{}x{}".format(resize_width, resize_height)
@@ -144,16 +162,22 @@ det_out_param = {
     'nms_param': {'nms_threshold': 0.45, 'top_k': 400},
     'save_output_param': {
             'label_map_file': label_map_file,
+            'output_directory': "lalalal",
+            'output_name_prefix': "anno",
+            'output_format': "VOC",
             },
     'keep_top_k': 200,
-    'confidence_threshold': 0.01,
+    'confidence_threshold': visualize_threshold,
     'code_type': code_type,
-    'visualize': True,
     'visualize_threshold': visualize_threshold,
+    'visualize': False,
+    'save_file': '',
+    'width': video_width,
+    'height': video_height,
     }
 
 # The job name should be same as the name used in examples/ssd/ssd_pascal.py.
-job_name = "SSD_{}".format(resize)
+job_name = "SSD_{}_ft".format(resize)
 # The name of the model. Modify it if you want.
 model_name = "VGG_VOC0712_{}".format(job_name)
 
@@ -176,7 +200,8 @@ max_iter = 0
 for file in os.listdir(snapshot_dir):
   if file.endswith(".caffemodel"):
     basename = os.path.splitext(file)[0]
-    iter = int(basename.split("{}_iter_".format(model_name))[1])
+    #iter = int(basename.split("{}_iter_".format(model_name))[1])
+    iter = 350000
     if iter > max_iter:
       max_iter = iter
 
@@ -185,7 +210,8 @@ if max_iter == 0:
   sys.exit()
 
 # The resume model.
-pretrain_model = "{}_iter_{}.caffemodel".format(snapshot_prefix, max_iter)
+#pretrain_model = "{}_iter_{}.caffemodel".format(snapshot_prefix, max_iter)
+pretrain_model = '/home/nsauca/caffe/models/VGGNet/VOC0712/SSD_300x300_ft/VGG_VOC0712_SSD_300x300_ft_iter_400000.caffemodel'
 
 # parameters for generating priors.
 # minimum dimension of input image
@@ -263,7 +289,7 @@ net.detection_out = L.DetectionOutput(*mbox_layers,
     detection_output_param=det_out_param,
     transform_param=output_transform_param,
     include=dict(phase=caffe_pb2.Phase.Value('TEST')))
-net.slience = L.Silence(net.detection_out, ntop=0,
+net.slience = L.Silence(net.detection_out, ntop=0, 
     include=dict(phase=caffe_pb2.Phase.Value('TEST')))
 
 with open(test_net_file, 'w') as f:

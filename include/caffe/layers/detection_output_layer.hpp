@@ -108,6 +108,8 @@ class DetectionOutputLayer : public Layer<Dtype> {
   float visualize_threshold_;
   shared_ptr<DataTransformer<Dtype> > data_transformer_;
   string save_file_;
+  int width_;
+  int height_;
   Blob<Dtype> bbox_preds_;
   Blob<Dtype> bbox_permute_;
   Blob<Dtype> conf_permute_;
