@@ -78,19 +78,21 @@ webcam_id = 0
 skip_frames = 0
 
 # The parameters for the webcam demo
+saveFile = sys.argv[1]
+
 
 # Key parameters used in training
 # If true, use batch norm for all newly added layers.
 # Currently only the non batch norm version has been tested.
 use_batchnorm = False
-num_classes = 21
+num_classes = 4
 share_location = True
 background_label_id=0
 conf_loss_type = P.MultiBoxLoss.SOFTMAX
 code_type = P.PriorBox.CENTER_SIZE
 lr_mult = 1.
 # Stores LabelMapItem.
-label_map_file = "data/VOC0712/labelmap_voc.prototxt"
+label_map_file = "data/coco/labelmap_miist.prototxt"
 # The resized image size
 resize_width = 300
 resize_height = 300
@@ -99,7 +101,7 @@ resize_height = 300
 # Set the number of test iterations to the maximum integer number.
 test_iter = int(math.pow(2, 29) - 1)
 # Use GPU or CPU
-solver_mode = P.Solver.GPU
+solver_mode = P.Solver.CPU
 # Defining which GPUs to use.
 gpus = "0"
 # Number of frames to be processed per batch.
@@ -107,18 +109,21 @@ test_batch_size = 1
 # Only display high quality detections whose scores are higher than a threshold.
 visualize_threshold = 0.6
 # Size of webcam image.
-webcam_width = 640
-webcam_height = 480
+video_width = 300
+video_height = 300
 # Scale the image size for display.
-scale = 1.5
+scale = 1
 
 ### Hopefully you don't need to change the following ###
 resize = "{}x{}".format(resize_width, resize_height)
 video_data_param = {
         'video_type': P.VideoData.WEBCAM,
-        'device_id': webcam_id,
+        'device_id': 101,
         'skip_frames': skip_frames,
-        }
+        #'video_file': "rtsp://10.203.77.21:8554/vlc",
+        #'video_file': "rtp://239.255.0.1:5004",
+        'video_file': "rtp://239.255.12.42:5004",
+	}
 test_transform_param = {
         'mean_value': [104, 117, 123],
         'resize_param': {
@@ -134,8 +139,8 @@ output_transform_param = {
         'resize_param': {
                 'prob': 1,
                 'resize_mode': P.Resize.WARP,
-                'height': int(webcam_height * scale),
-                'width': int(webcam_width * scale),
+                'height': int(video_height * scale),
+                'width': int(video_width * scale),
                 'interp_mode': [P.Resize.LINEAR],
                 },
         }
@@ -149,10 +154,13 @@ det_out_param = {
             'label_map_file': label_map_file,
             },
     'keep_top_k': 200,
-    'confidence_threshold': 0.01,
+    'confidence_threshold': visualize_threshold,
     'code_type': code_type,
     'visualize': True,
     'visualize_threshold': visualize_threshold,
+    'save_file': saveFile,
+    'width': video_width,
+    'height': video_height,
     }
 
 # The job name should be same as the name used in examples/ssd/ssd_pascal.py.
@@ -174,21 +182,7 @@ snapshot_prefix = "{}/{}".format(snapshot_dir, model_name)
 # job script path.
 job_file = "{}/{}.sh".format(job_dir, model_name)
 
-# Find most recent snapshot.
-max_iter = 0
-for file in os.listdir(snapshot_dir):
-  if file.endswith(".caffemodel"):
-    basename = os.path.splitext(file)[0]
-    iter = int(basename.split("{}_iter_".format(model_name))[1])
-    if iter > max_iter:
-      max_iter = iter
-
-if max_iter == 0:
-  print("Cannot find snapshot in {}".format(snapshot_dir))
-  sys.exit()
-
-# The resume model.
-pretrain_model = "{}_iter_{}.caffemodel".format(snapshot_prefix, max_iter)
+pretrain_model = '/home/nick/Desktop/caffe/models/VGGNet/VOC0712/SSD_300x300_ft/VGG_VOC0712_SSD_300x300_ft_iter_400000.caffemodel'
 
 # parameters for generating priors.
 # minimum dimension of input image
