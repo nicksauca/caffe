@@ -1,4 +1,4 @@
-#ifdef USE_OPENCV
+//#ifdef USE_OPENCV
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
@@ -31,6 +31,7 @@ VideoDataLayer<Dtype>::~VideoDataLayer() {
 template <typename Dtype>
 void VideoDataLayer<Dtype>::DataLayerSetUp(
     const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
+  LOG(INFO) << "entered in DataLayerSetUp for video ";
   const int batch_size = this->layer_param_.data_param().batch_size();
   const VideoDataParameter& video_data_param =
       this->layer_param_.video_data_param();
@@ -44,9 +45,9 @@ void VideoDataLayer<Dtype>::DataLayerSetUp(
     const int device_id = video_data_param.device_id();
     if(device_id == 101){
     	CHECK(video_data_param.has_video_file()) << "Must provide webcam address";
-    	const string& video_file = video_data_param.video_file();
-    	if (!cap_.open(video_file)) {
-       		LOG(FATAL) << "Failed to open remote webcam: " << video_file;
+	const string& video_file = video_data_param.video_file();
+	if (!cap_.open(video_file)) {
+        	LOG(FATAL) << "Failed to open remote webcam: " << video_file;
     	}
     } else {
     	if (!cap_.open(device_id)) {
@@ -95,6 +96,7 @@ void VideoDataLayer<Dtype>::DataLayerSetUp(
 // This function is called on prefetch thread
 template<typename Dtype>
 void VideoDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
+  LOG(INFO) << "entered in load_batch for video ";
   CPUTimer batch_timer;
   batch_timer.Start();
   double read_time = 0;
@@ -125,12 +127,17 @@ void VideoDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
     cv::Mat cv_img;
     if (video_type_ == VideoDataParameter_VideoType_WEBCAM) {
       cap_ >> cv_img;
+      LOG(INFO) << "Frame number: " << cap_.get(CV_CAP_PROP_POS_FRAMES);
+      if(cv_img.empty()){
+	LOG(INFO) << "Finished processing webcam.";
+        raise(SIGINT);	
+	}
     } else if (video_type_ == VideoDataParameter_VideoType_VIDEO) {
       if (processed_frames_ >= total_frames_ && processed_frames_ < total_frames_ + prefetchedSize) {
 		cap_.set(CV_CAP_PROP_POS_FRAMES, 0);
       } else if (processed_frames_ >= total_frames_ + prefetchedSize) {
 		LOG(INFO) << "Finished processing video.";
-        raise(SIGINT);
+        	raise(SIGINT);
 	  }
       ++processed_frames_;
       cap_ >> cv_img;
@@ -174,4 +181,4 @@ INSTANTIATE_CLASS(VideoDataLayer);
 REGISTER_LAYER_CLASS(VideoData);
 
 }  // namespace caffe
-#endif  // USE_OPENCV
+//#endif  // USE_OPENCV

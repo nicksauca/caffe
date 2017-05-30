@@ -78,6 +78,8 @@ webcam_id = 101
 skip_frames = 0
 
 # The parameters for the webcam demo
+saveFile = sys.argv[1]
+
 
 
 saveFile = sys.argv[1]
@@ -102,7 +104,7 @@ resize_height = 300
 # Set the number of test iterations to the maximum integer number.
 test_iter = int(math.pow(2, 29) - 1)
 # Use GPU or CPU
-solver_mode = P.Solver.GPU
+solver_mode = P.Solver.CPU
 # Defining which GPUs to use.
 gpus = "0"
 # Number of frames to be processed per batch.
@@ -110,8 +112,8 @@ test_batch_size = 1
 # Only display high quality detections whose scores are higher than a threshold.
 visualize_threshold = 0.6
 # Size of webcam image.
-webcam_width = 640
-webcam_height = 480
+video_width = 300
+video_height = 300
 # Scale the image size for display.
 scale = 1
 
@@ -119,10 +121,12 @@ scale = 1
 resize = "{}x{}".format(resize_width, resize_height)
 video_data_param = {
         'video_type': P.VideoData.WEBCAM,
-        'device_id': webcam_id,
+        'device_id': 101,
         'skip_frames': skip_frames,
+        #'video_file': "rtsp://10.203.77.21:8554/vlc",
+        #'video_file': "rtp://239.255.0.1:5004",
         'video_file': "rtp://239.255.12.42:5004",
-        }
+	}
 test_transform_param = {
         'mean_value': [104, 117, 123],
         'resize_param': {
@@ -138,8 +142,8 @@ output_transform_param = {
         'resize_param': {
                 'prob': 1,
                 'resize_mode': P.Resize.WARP,
-                'height': int(webcam_height * scale),
-                'width': int(webcam_width * scale),
+                'height': int(video_height * scale),
+                'width': int(video_width * scale),
                 'interp_mode': [P.Resize.LINEAR],
                 },
         }
@@ -157,8 +161,9 @@ det_out_param = {
     'code_type': code_type,
     'visualize': False,
     'visualize_threshold': visualize_threshold,
-    'width': webcam_width,
-    'height': webcam_height,
+    'save_file': saveFile,
+    'width': video_width,
+    'height': video_height,
     }
 
 # The job name should be same as the name used in examples/ssd/ssd_pascal.py.
@@ -180,10 +185,8 @@ snapshot_prefix = "{}/{}".format(snapshot_dir, model_name)
 # job script path.
 job_file = "{}/{}.sh".format(job_dir, model_name)
 
-
-
 # The resume model.
-pretrain_model = '/home/nsauca/caffe/models/VGGNet/VOC0712/SSD_300x300_ft/VGG_VOC0712_SSD_300x300_ft_iter_400000.caffemodel'
+pretrain_model = 'models/VGGNet/VOC0712/SSD_300x300_ft/VGG_VOC0712_SSD_300x300_ft_iter_400000.caffemodel'
 
 # parameters for generating priors.
 # minimum dimension of input image
