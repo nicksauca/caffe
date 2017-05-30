@@ -42,8 +42,16 @@ void VideoDataLayer<Dtype>::DataLayerSetUp(
   cv::Mat cv_img;
   if (video_type_ == VideoDataParameter_VideoType_WEBCAM) {
     const int device_id = video_data_param.device_id();
-    if (!cap_.open(device_id)) {
-      LOG(FATAL) << "Failed to open webcam: " << device_id;
+    if(device_id == 101){
+    	CHECK(video_data_param.has_video_file()) << "Must provide webcam address";
+    	const string& video_file = video_data_param.video_file();
+    	if (!cap_.open(video_file)) {
+       		LOG(FATAL) << "Failed to open remote webcam: " << video_file;
+    	}
+    } else {
+    	if (!cap_.open(device_id)) {
+        	LOG(FATAL) << "Failed to open webcam: " << device_id;
+    	}
     }
     cap_ >> cv_img;
   } else if (video_type_ == VideoDataParameter_VideoType_VIDEO) {

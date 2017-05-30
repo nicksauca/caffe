@@ -73,24 +73,27 @@ caffe_root = os.getcwd()
 # Set true if you want to start training right after generating all files.
 run_soon = True
 # The device id for webcam
-webcam_id = 0
+webcam_id = 101
 # Number of frames to be skipped.
 skip_frames = 0
 
 # The parameters for the webcam demo
 
+
+saveFile = sys.argv[1]
+
 # Key parameters used in training
 # If true, use batch norm for all newly added layers.
 # Currently only the non batch norm version has been tested.
 use_batchnorm = False
-num_classes = 21
+num_classes = 4
 share_location = True
 background_label_id=0
 conf_loss_type = P.MultiBoxLoss.SOFTMAX
 code_type = P.PriorBox.CENTER_SIZE
 lr_mult = 1.
 # Stores LabelMapItem.
-label_map_file = "data/VOC0712/labelmap_voc.prototxt"
+label_map_file = "data/coco/labelmap_miist.prototxt"
 # The resized image size
 resize_width = 300
 resize_height = 300
@@ -110,7 +113,7 @@ visualize_threshold = 0.6
 webcam_width = 640
 webcam_height = 480
 # Scale the image size for display.
-scale = 1.5
+scale = 1
 
 ### Hopefully you don't need to change the following ###
 resize = "{}x{}".format(resize_width, resize_height)
@@ -118,6 +121,7 @@ video_data_param = {
         'video_type': P.VideoData.WEBCAM,
         'device_id': webcam_id,
         'skip_frames': skip_frames,
+        'video_file': "rtp://239.255.12.42:5004",
         }
 test_transform_param = {
         'mean_value': [104, 117, 123],
@@ -149,10 +153,12 @@ det_out_param = {
             'label_map_file': label_map_file,
             },
     'keep_top_k': 200,
-    'confidence_threshold': 0.01,
+    'confidence_threshold': visualize_threshold,
     'code_type': code_type,
-    'visualize': True,
+    'visualize': False,
     'visualize_threshold': visualize_threshold,
+    'width': webcam_width,
+    'height': webcam_height,
     }
 
 # The job name should be same as the name used in examples/ssd/ssd_pascal.py.
@@ -174,21 +180,10 @@ snapshot_prefix = "{}/{}".format(snapshot_dir, model_name)
 # job script path.
 job_file = "{}/{}.sh".format(job_dir, model_name)
 
-# Find most recent snapshot.
-max_iter = 0
-for file in os.listdir(snapshot_dir):
-  if file.endswith(".caffemodel"):
-    basename = os.path.splitext(file)[0]
-    iter = int(basename.split("{}_iter_".format(model_name))[1])
-    if iter > max_iter:
-      max_iter = iter
 
-if max_iter == 0:
-  print("Cannot find snapshot in {}".format(snapshot_dir))
-  sys.exit()
 
 # The resume model.
-pretrain_model = "{}_iter_{}.caffemodel".format(snapshot_prefix, max_iter)
+pretrain_model = '/home/nsauca/caffe/models/VGGNet/VOC0712/SSD_300x300_ft/VGG_VOC0712_SSD_300x300_ft_iter_400000.caffemodel'
 
 # parameters for generating priors.
 # minimum dimension of input image
